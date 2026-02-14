@@ -28,6 +28,9 @@ on:
         required: true
         default: "erofs"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
