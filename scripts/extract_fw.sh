@@ -12,7 +12,7 @@ echo "============================================"
 echo ""
 
 # Load config
-source config.txt
+source scripts/config.txt
 # Convert comma-separated list to space-separated
 IFS=',' read -ra PART_ARRAY <<< "$PORT_PARTITIONS"
 
