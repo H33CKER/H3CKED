@@ -67,7 +67,7 @@ jobs:
       - name: 📡 Extract firmware
         run: |
           chmod +x scripts/extract_fw.sh
-          bash scripts/extract_fw.sh "FIRMWARE"
+          bash scripts/extract_fw.sh "FIRMWARE/${TARGET_DEVICE"
 
       - name: 🏗️ Pack ROM
         run: |
