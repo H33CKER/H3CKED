@@ -43,8 +43,8 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-#      - name: 🧹 Clean runner environment
-#        uses: rokibhasansagar/slimhub_actions@v25.42.5
+      - name: 🧹 Clean runner environment
+        uses: rokibhasansagar/slimhub_actions@v25.42.5
 
       - name: 🔧 Install dependencies
         run: |
