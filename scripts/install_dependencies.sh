@@ -1,14 +1,14 @@
 #!/bin/bash
 set -e
 
+# 🛠 Update package lists
 echo "🔧 Updating package lists..."
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update -qq
+sudo apt update -y
 
+# 📦 Install system packages
 echo "📦 Installing system packages..."
-sudo apt-get install -y -qq \
+sudo apt install -y \
     p7zip-full \
-    lz4 \
     android-sdk-libsparse-utils \
     python3 \
     python3-pip \
@@ -17,16 +17,29 @@ sudo apt-get install -y -qq \
     e2fsprogs \
     openjdk-17-jdk
 
+# 🐍 Upgrade pip
 echo "🐍 Upgrading pip..."
-python3 -m pip install --upgrade pip
+python3 -m pip install --upgrade --user pip
 
+# 🐍 Install Python packages
 echo "🐍 Installing Python packages..."
-pip3 install --no-cache-dir --upgrade liblp tgcrypto pyrogram
-pip3 install --no-cache-dir --upgrade git+https://github.com/martinetd/samloader.git
+python3 -m pip install --user \
+    liblp \
+    tgcrypto \
+    pyrogram \
+    pysocks \
+    git+https://github.com/martinetd/samloader.git \
+    tqdm \
+    pycryptodomex
 
+# 🔐 Make binaries executable
 echo "🔐 Making binaries executable..."
 for f in bin/ext4/make_ext4fs bin/erofs-utils/extract.erofs bin/erofs-utils/mkfs.erofs; do
-    [ -f "$f" ] && chmod +x "$f"
+    if [ -f "$f" ]; then
+        chmod +x "$f"
+    else
+        echo "[!] Warning: $f not found"
+    fi
 done
 
-echo "✅ Dependency installation complete."
+echo "✅ Dependencies installed successfully!"
