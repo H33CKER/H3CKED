@@ -71,13 +71,11 @@ jobs:
 
       - name: 🏗️ Pack ROM
         run: |
-          chmod +x .sh
-          bash H3CKED.sh \
-            "$STOCK_DEVICE" \
-            "$TARGET_DEVICE" \
-            "$TARGET_DEVICE_CSC" \
-            "$TARGET_DEVICE_IMEI" \
-            "$OUTPUT_FILESYSTEM"
+          chmod +x scripts/pack_rom.sh
+          bash scripts/pack_rom.sh \
+            "FIRMWARE" \
+            "$OUTPUT_FILESYSTEM" \
+            "OUT"
 
 
       - name: 📦 Split large files if necessary
