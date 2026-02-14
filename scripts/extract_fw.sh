@@ -7,107 +7,111 @@ if [ "$#" -ne 1 ]; then
     exit 1
 fi
 
-FIRM_DIR="$1"
+FIRM_DIR="$(realpath "$1")"
 
 if [[ ! -d "$FIRM_DIR" ]]; then
     echo "[!] Directory not found: $FIRM_DIR"
     exit 1
 fi
 
-echo "🔧 Starting Samsung firmware processing..."
+echo ""
+echo "============================================"
+echo "🔧 Firmware Extraction Started"
+echo "📂 Working Directory: $FIRM_DIR"
+echo "============================================"
+echo ""
+
+archive_count=0
+super_count=0
+partition_count=0
 
 # ------------------------------------------------
-# Step 1 — Rename .md5
+# Rename .md5
 # ------------------------------------------------
-rename_md5() {
-    for f in "$FIRM_DIR"/*.md5; do
-        [ -f "$f" ] || continue
-        mv -- "$f" "${f%.md5}"
-        echo "→ Renamed $(basename "$f")"
-    done
-}
+find "$FIRM_DIR" -type f -name "*.md5" | while read -r f; do
+    mv -- "$f" "${f%.md5}"
+    echo "→ Renamed: $(basename "$f")"
+done
 
 # ------------------------------------------------
-# Step 2 — Extract TAR archives
+# Extract archives recursively
 # ------------------------------------------------
-extract_tar() {
-    for f in "$FIRM_DIR"/*.tar; do
-        [ -f "$f" ] || continue
-        echo "→ Extracting $(basename "$f")"
-        tar -xf "$f" -C "$FIRM_DIR"
-    done
-}
+while true; do
+    extracted_this_round=0
 
-# ------------------------------------------------
-# Step 3 — Extract super.img.lz4
-# ------------------------------------------------
-extract_lz4() {
-    for f in "$FIRM_DIR"/*.lz4; do
-        [ -f "$f" ] || continue
-        echo "→ Decompressing $(basename "$f")"
-        lz4 -d "$f" "${f%.lz4}"
-    done
-}
+    while read -r f; do
+        echo "→ Extracting TAR: $(basename "$f")"
+        tar -xf "$f" -C "$(dirname "$f")"
+        archive_count=$((archive_count+1))
+        extracted_this_round=1
+    done < <(find "$FIRM_DIR" -type f -name "*.tar")
 
-# ------------------------------------------------
-# Step 4 — Extract super.img
-# ------------------------------------------------
-extract_super() {
-    if [[ -f "$FIRM_DIR/super.img" ]]; then
-        echo "→ Converting super.img to raw"
-        simg2img "$FIRM_DIR/super.img" "$FIRM_DIR/super_raw.img"
+    while read -r f; do
+        echo "→ Decompressing LZ4: $(basename "$f")"
+        lz4 -d "$f" "${f%.lz4}" >/dev/null
+        archive_count=$((archive_count+1))
+        extracted_this_round=1
+    done < <(find "$FIRM_DIR" -type f -name "*.lz4")
 
-        echo "→ Unpacking logical partitions"
-        lpunpack -o "$FIRM_DIR" "$FIRM_DIR/super_raw.img"
-
-        echo "✅ super.img unpacked"
+    if [[ "$extracted_this_round" -eq 0 ]]; then
+        break
     fi
-}
+done
 
 # ------------------------------------------------
-# Step 5 — Extract filesystem images
+# Extract super.img
 # ------------------------------------------------
-extract_partitions() {
+while read -r f; do
+    dir="$(dirname "$f")"
+    echo ""
+    echo "→ Processing super.img in: $dir"
 
-    for imgfile in "$FIRM_DIR"/*.img; do
-        [ -f "$imgfile" ] || continue
+    simg2img "$f" "$dir/super_raw.img"
+    lpunpack -o "$dir" "$dir/super_raw.img"
 
-        name="$(basename "$imgfile")"
+    super_count=$((super_count+1))
+done < <(find "$FIRM_DIR" -type f -name "super.img")
 
-        # Skip super and boot type images
-        if [[ "$name" == super* ]] || [[ "$name" == boot* ]] || [[ "$name" == vbmeta* ]]; then
-            continue
-        fi
+# ------------------------------------------------
+# Extract partitions
+# ------------------------------------------------
+while read -r imgfile; do
+    name="$(basename "$imgfile")"
 
-        echo ""
-        echo "→ Processing $name"
-
-        if file -b "$imgfile" | grep -qi "ext4"; then
-            echo "  Detected ext4"
-            python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$FIRM_DIR"
-
-        elif file -b "$imgfile" | grep -qi "erofs"; then
-            echo "  Detected EROFS"
-            "$(pwd)/bin/erofs-utils/extract.erofs" \
-                -i "$imgfile" -x -f -o "$FIRM_DIR"
-
-        else
-            echo "  ⚠ Unknown filesystem — skipped"
-        fi
-    done
+    # Skip boot / vbmeta / super
+    if [[ "$name" == super* ]] || [[ "$name" == boot* ]] || [[ "$name" == vbmeta* ]]; then
+        continue
+    fi
 
     echo ""
-    echo "✅ Partition extraction complete"
-}
+    echo "→ Extracting partition: $name"
+
+    if file -b "$imgfile" | grep -qi "ext4"; then
+        echo "  Detected ext4"
+        python3 "$(pwd)/bin/py_scripts/imgextractor.py" "$imgfile" "$(dirname "$imgfile")"
+        partition_count=$((partition_count+1))
+
+    elif file -b "$imgfile" | grep -qi "erofs"; then
+        echo "  Detected EROFS"
+        "$(pwd)/bin/erofs-utils/extract.erofs" \
+            -i "$imgfile" -x -f -o "$(dirname "$imgfile")"
+        partition_count=$((partition_count+1))
+
+    else
+        echo "  ⚠ Unknown filesystem — skipped"
+    fi
+
+done < <(find "$FIRM_DIR" -type f -name "*.img")
 
 # ------------------------------------------------
-# Execute in strict order
+# Summary
 # ------------------------------------------------
-rename_md5
-extract_tar
-extract_lz4
-extract_super
-extract_partitions
-
 echo ""
-echo "🎉 Firmware fully processed (Samsung chain complete)"
+echo "============================================"
+echo "📊 EXTRACTION SUMMARY"
+echo "📂 Directory: $FIRM_DIR"
+echo "📦 Archives extracted: $archive_count"
+echo "🧩 super.img processed: $super_count"
+echo "📁 Partitions extracted: $partition_count"
+echo "============================================"
+echo "✅ Firmware extraction complete!"
