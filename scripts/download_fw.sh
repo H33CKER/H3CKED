@@ -81,11 +81,6 @@ DOWNLOAD_FIRMWARE() {
 
     # --- Step 5: Cleanup ---
     rm -f "$enc_file"
-
-    # Optional: auto-extract for ROM porting
-    echo "Extracting firmware..."
-    unzip -q "${DOWN_DIR}/${MODEL}.zip" -d "$DOWN_DIR"
-    echo "✅ Firmware extracted to: $DOWN_DIR"
 }
 
 # ===================================================================

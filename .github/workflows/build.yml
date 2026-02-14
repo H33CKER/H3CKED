@@ -1,4 +1,4 @@
-name: QuantumROM Tools
+name: H3CKED UI Build
 
 on:
   workflow_dispatch:
@@ -43,8 +43,8 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-#      - name: 🧹 Clean runner environment
-#        uses: rokibhasansagar/slimhub_actions@v25.42.5
+      - name: 🧹 Clean runner environment
+        uses: rokibhasansagar/slimhub_actions@v25.42.5
 
       - name: 🔧 Install dependencies
         run: |
@@ -64,15 +64,31 @@ jobs:
             "$TARGET_DEVICE_IMEI" \
             "FIRMWARE"
 
+      - name: 📡 Extract firmware
+        run: |
+          chmod +x scripts/extract_fw.sh
+          bash scripts/extract_fw.sh "$FIRMWARE_DIR"
+
       - name: 🏗️ Build ROM
         run: |
-          chmod +x sixteen.sh
-          bash sixteen.sh \
+          chmod +x H3CKED.sh
+          bash H3CKED.sh \
             "$STOCK_DEVICE" \
             "$TARGET_DEVICE" \
             "$TARGET_DEVICE_CSC" \
             "$TARGET_DEVICE_IMEI" \
             "$OUTPUT_FILESYSTEM"
+
+      - name: 🏗️ Pack ROM
+        run: |
+          chmod +x .sh
+          bash H3CKED.sh \
+            "$STOCK_DEVICE" \
+            "$TARGET_DEVICE" \
+            "$TARGET_DEVICE_CSC" \
+            "$TARGET_DEVICE_IMEI" \
+            "$OUTPUT_FILESYSTEM"
+
 
       - name: 📦 Split large files if necessary
         run: |
@@ -98,7 +114,7 @@ jobs:
           tag_name: build-${{ github.run_id }}
           name: "${{ env.TARGET_DEVICE }} on ${{ env.STOCK_DEVICE }} - Build ${{ github.run_id }}"
           body: |
-            ### QuantumROM Build Information
+            ### H3CKED UI Build Information
             - Stock Device: ${{ env.STOCK_DEVICE }}
             - Port Base: ${{ env.TARGET_DEVICE }}
             - CSC: ${{ env.TARGET_DEVICE_CSC }}
