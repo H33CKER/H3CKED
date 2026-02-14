@@ -26,19 +26,28 @@ super_count=0
 partition_count=0
 
 # ------------------------------------------------
-# Rename .md5
+# Rename .md5 files
 # ------------------------------------------------
-find "$FIRM_DIR" -type f -name "*.md5" | while read -r f; do
+while read -r f; do
     mv -- "$f" "${f%.md5}"
     echo "→ Renamed: $(basename "$f")"
-done
+done < <(find "$FIRM_DIR" -type f -name "*.md5")
 
 # ------------------------------------------------
-# Extract archives recursively
+# Recursive archive extraction loop
 # ------------------------------------------------
 while true; do
     extracted_this_round=0
 
+    # ZIP
+    while read -r f; do
+        echo "→ Extracting ZIP: $(basename "$f")"
+        7z x -y -bd -o"$(dirname "$f")" "$f" >/dev/null
+        archive_count=$((archive_count+1))
+        extracted_this_round=1
+    done < <(find "$FIRM_DIR" -type f -name "*.zip")
+
+    # TAR
     while read -r f; do
         echo "→ Extracting TAR: $(basename "$f")"
         tar -xf "$f" -C "$(dirname "$f")"
@@ -46,6 +55,7 @@ while true; do
         extracted_this_round=1
     done < <(find "$FIRM_DIR" -type f -name "*.tar")
 
+    # LZ4
     while read -r f; do
         echo "→ Decompressing LZ4: $(basename "$f")"
         lz4 -d "$f" "${f%.lz4}" >/dev/null
@@ -59,7 +69,7 @@ while true; do
 done
 
 # ------------------------------------------------
-# Extract super.img
+# Process super.img
 # ------------------------------------------------
 while read -r f; do
     dir="$(dirname "$f")"
@@ -73,13 +83,16 @@ while read -r f; do
 done < <(find "$FIRM_DIR" -type f -name "super.img")
 
 # ------------------------------------------------
-# Extract partitions
+# Extract partitions (ext4 + EROFS)
 # ------------------------------------------------
 while read -r imgfile; do
     name="$(basename "$imgfile")"
 
-    # Skip boot / vbmeta / super
-    if [[ "$name" == super* ]] || [[ "$name" == boot* ]] || [[ "$name" == vbmeta* ]]; then
+    # Skip non-system partitions
+    if [[ "$name" == super* ]] || \
+       [[ "$name" == boot* ]] || \
+       [[ "$name" == vbmeta* ]] || \
+       [[ "$name" == dtbo* ]]; then
         continue
     fi
 
@@ -115,3 +128,4 @@ echo "🧩 super.img processed: $super_count"
 echo "📁 Partitions extracted: $partition_count"
 echo "============================================"
 echo "✅ Firmware extraction complete!"
+echo ""
