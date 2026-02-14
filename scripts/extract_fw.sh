@@ -11,6 +11,11 @@ echo "📂 Working Directory: $FIRM_DIR"
 echo "============================================"
 echo ""
 
+# Load config
+source config.txt
+# Convert comma-separated list to space-separated
+IFS=',' read -ra PART_ARRAY <<< "$PORT_PARTITIONS"
+
 archive_count=0
 super_count=0
 partition_count=0
@@ -73,21 +78,23 @@ fi
 # ------------------------------------------------
 # 6️⃣ Extract partitions
 # ------------------------------------------------
-for img in system*.img vendor*.img product*.img odm*.img; do
-    [ -f "$img" ] || continue
+for part in "${PART_ARRAY[@]}"; do
+    for img in ${part}*.img; do
+        [ -f "$img" ] || continue
 
-    echo "→ Extracting partition: $img"
+        echo "→ Extracting partition: $img"
 
-    if file -b "$img" | grep -qi ext4; then
-        python3 "$(pwd)/../../bin/py_scripts/imgextractor.py" \
-            "$img" "$(pwd)"
-        partition_count=$((partition_count+1))
+        if file -b "$img" | grep -qi ext4; then
+            python3 "$(pwd)/../../bin/py_scripts/imgextractor.py" \
+                "$img" "$(pwd)"
+            partition_count=$((partition_count+1))
 
-    elif file -b "$img" | grep -qi erofs; then
-        "$(pwd)/../../bin/erofs-utils/extract.erofs" \
-            -i "$img" -x -f -o "$(pwd)"
-        partition_count=$((partition_count+1))
-    fi
+        elif file -b "$img" | grep -qi erofs; then
+            "$(pwd)/../../bin/erofs-utils/extract.erofs" \
+                -i "$img" -x -f -o "$(pwd)"
+            partition_count=$((partition_count+1))
+        fi
+    done
 done
 
 # ------------------------------------------------
