@@ -73,7 +73,7 @@ jobs:
         run: |
           chmod +x scripts/pack_rom.sh
           bash scripts/pack_rom.sh \
-            "FIRMWARE" \
+            "FIRMWARE/${TARGET_DEVICE}" \
             "$OUTPUT_FILESYSTEM" \
             "OUT"
 

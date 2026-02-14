@@ -23,7 +23,7 @@ partition_count=0
 cd "$FIRM_DIR"
 
 # ------------------------------------------------
-# 1️⃣ Extract ZIP (only once)
+# 1️⃣ Extract ZIP
 # ------------------------------------------------
 if compgen -G "*.zip" > /dev/null; then
     for zip in *.zip; do
@@ -78,23 +78,24 @@ fi
 # ------------------------------------------------
 # 6️⃣ Extract partitions
 # ------------------------------------------------
+
 for part in "${PART_ARRAY[@]}"; do
-    for img in ${part}*.img; do
-        [ -f "$img" ] || continue
+    img="${part}.img"
 
-        echo "→ Extracting partition: $img"
+    [ -f "$img" ] || continue
 
-        if file -b "$img" | grep -qi ext4; then
-            python3 "$(pwd)/../../bin/py_scripts/imgextractor.py" \
-                "$img" "$(pwd)"
-            partition_count=$((partition_count+1))
+    echo "→ Extracting partition: $img"
 
-        elif file -b "$img" | grep -qi erofs; then
-            "$(pwd)/../../bin/erofs-utils/extract.erofs" \
-                -i "$img" -x -f -o "$(pwd)"
-            partition_count=$((partition_count+1))
-        fi
-    done
+    if file -b "$img" | grep -qi ext4; then
+        python3 "$(pwd)/../../bin/py_scripts/imgextractor.py" \
+            "$img" "$(pwd)"
+        partition_count=$((partition_count+1))
+
+    elif file -b "$img" | grep -qi erofs; then
+        "$(pwd)/../../bin/erofs-utils/extract.erofs" \
+            -i "$img" -x -f -o "$(pwd)"
+        partition_count=$((partition_count+1))
+    fi
 done
 
 # ------------------------------------------------
