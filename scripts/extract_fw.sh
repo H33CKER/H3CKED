@@ -18,7 +18,7 @@ FIRM_DIR="$1"
 # --------------------------------------------
 # Load configuration
 # --------------------------------------------
-CONFIG_FILE="config.txt"
+CONFIG_FILE="scripts/config.txt"
 if [[ -f "$CONFIG_FILE" ]]; then
     echo "🔧 Loading configuration from $CONFIG_FILE"
     source "$CONFIG_FILE"

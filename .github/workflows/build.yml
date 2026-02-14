@@ -69,16 +69,6 @@ jobs:
           chmod +x scripts/extract_fw.sh
           bash scripts/extract_fw.sh "FIRMWARE"
 
-      - name: 🏗️ Build ROM
-        run: |
-          chmod +x H3CKED.sh
-          bash H3CKED.sh \
-            "$STOCK_DEVICE" \
-            "$TARGET_DEVICE" \
-            "$TARGET_DEVICE_CSC" \
-            "$TARGET_DEVICE_IMEI" \
-            "$OUTPUT_FILESYSTEM"
-
       - name: 🏗️ Pack ROM
         run: |
           chmod +x .sh
