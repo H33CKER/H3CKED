@@ -1,0 +1,6 @@
+# =================================================
+# H3CKED ROM Port Configuration
+# =================================================
+
+# Partitions/images to port (comma separated)
+PORT_PARTITIONS=odm,system,system_ext,product
