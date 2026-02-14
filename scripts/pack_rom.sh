@@ -20,7 +20,7 @@ OUT_DIR="$3"
 [ ! -d "$EXTRACTED_FIRM_DIR" ] && { echo "[ERROR] $EXTRACTED_FIRM_DIR not found"; exit 1; }
 mkdir -p "$OUT_DIR"
 
-CONFIG_DIR="scripts/config.txt"
+CONFIG_DIR="$EXTRACTED_FIRM_DIR/config"
 mkdir -p "$CONFIG_DIR"
 
 # --------------------------------------------
