@@ -1,0 +1,112 @@
+name: QuantumROM Tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      STOCK_DEVICE:
+        description: "Stock device model"
+        required: true
+        default: "SM-A226B"
+
+      TARGET_DEVICE:
+        description: "Target device model"
+        required: true
+        default: "SM-A346B"
+
+      TARGET_DEVICE_CSC:
+        description: "Target device CSC"
+        required: true
+        default: "BTB"
+
+      TARGET_DEVICE_IMEI:
+        description: "Target device IMEI"
+        required: true
+        default: "353117555323497"
+
+      OUTPUT_FILESYSTEM:
+        description: "Filesystem type (erofs / ext4)"
+        required: true
+        default: "erofs"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      STOCK_DEVICE: ${{ github.event.inputs.STOCK_DEVICE }}
+      TARGET_DEVICE: ${{ github.event.inputs.TARGET_DEVICE }}
+      TARGET_DEVICE_CSC: ${{ github.event.inputs.TARGET_DEVICE_CSC }}
+      TARGET_DEVICE_IMEI: ${{ github.event.inputs.TARGET_DEVICE_IMEI }}
+      OUTPUT_FILESYSTEM: ${{ github.event.inputs.OUTPUT_FILESYSTEM }}
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🧹 Clean runner environment
+        uses: rokibhasansagar/slimhub_actions@v25.42.5
+
+      - name: 🔧 Install dependencies
+        run: |
+          chmod +x scripts/install_dependencies.sh
+          bash scripts/install_dependencies.sh
+
+      - name: 📂 Setup directories
+        run: |
+          mkdir -p FIRMWARE OUT WORK
+
+      - name: 📡 Download firmware
+        run: |
+          chmod +x scripts/download_fw.sh
+          bash scripts/download_fw.sh \
+            "$TARGET_DEVICE" \
+            "$TARGET_DEVICE_CSC" \
+            "$TARGET_DEVICE_IMEI" \
+            "FIRMWARE"
+
+      - name: 🏗️ Build ROM
+        run: |
+          chmod +x sixteen.sh
+          bash sixteen.sh \
+            "$STOCK_DEVICE" \
+            "$TARGET_DEVICE" \
+            "$TARGET_DEVICE_CSC" \
+            "$TARGET_DEVICE_IMEI" \
+            "$OUTPUT_FILESYSTEM"
+
+      - name: 📦 Split large files if necessary
+        run: |
+          MAX_SIZE=2147483647
+          OUT_DIR="./OUT"
+
+          echo "BUILD_TIME=$(date '+%Y-%m-%d %I:%M:%S %p UTC')" >> $GITHUB_ENV
+
+          for file in "$OUT_DIR"/*; do
+            [ -f "$file" ] || continue
+            FILE_SIZE=$(stat -c%s "$file")
+
+            if [ "$FILE_SIZE" -gt "$MAX_SIZE" ]; then
+              echo "Splitting $file"
+              split -b "$MAX_SIZE" -d -a 3 "$file" "$file.part"
+              rm -f "$file"
+            fi
+          done
+
+      - name: 🚀 Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_id }}
+          name: "${{ env.TARGET_DEVICE }} on ${{ env.STOCK_DEVICE }} - Build ${{ github.run_id }}"
+          body: |
+            ### QuantumROM Build Information
+            - Stock Device: ${{ env.STOCK_DEVICE }}
+            - Port Base: ${{ env.TARGET_DEVICE }}
+            - CSC: ${{ env.TARGET_DEVICE_CSC }}
+            - Filesystem: ${{ env.OUTPUT_FILESYSTEM }}
+            - Build Time: ${{ env.BUILD_TIME }}
+          files: ./OUT/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🧽 Cleanup
+        run: rm -rf FIRMWARE OUT WORK
