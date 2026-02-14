@@ -23,14 +23,15 @@ partition_count=0
 cd "$FIRM_DIR"
 
 # ------------------------------------------------
-# 1️⃣ Extract ZIP
+# 1️⃣ Extract only AP from ZIP
 # ------------------------------------------------
 if compgen -G "*.zip" > /dev/null; then
     for zip in *.zip; do
-        echo "→ Extracting ZIP: $zip"
-        7z x -y "$zip" >/dev/null
-        rm -f "$zip"
+        echo "→ Extracting only AP from ZIP: $zip"
+        7z x -y "$zip" "AP*.tar.md5" >/dev/null
         archive_count=$((archive_count+1))
+        # Optionally remove the ZIP after extraction
+        rm -f "$zip"
     done
 fi
 
@@ -44,10 +45,10 @@ for f in *.md5; do
 done
 
 # ------------------------------------------------
-# 3️⃣ Extract all TAR
+# 3️⃣ Extract only AP TAR
 # ------------------------------------------------
-if compgen -G "*.tar" > /dev/null; then
-    for tarfile in *.tar; do
+if compgen -G "AP*.tar" > /dev/null; then
+    for tarfile in AP*.tar; do
         echo "→ Extracting TAR: $tarfile"
         tar -xf "$tarfile"
         rm -f "$tarfile"
