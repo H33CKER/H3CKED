@@ -2,17 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-if [ "$#" -ne 1 ]; then
-    echo "Usage: $0 <FIRMWARE_DIRECTORY>"
-    exit 1
-fi
-
 FIRM_DIR="$(realpath "$1")"
-
-if [[ ! -d "$FIRM_DIR" ]]; then
-    echo "[!] Directory not found: $FIRM_DIR"
-    exit 1
-fi
 
 echo ""
 echo "============================================"
@@ -25,93 +15,80 @@ archive_count=0
 super_count=0
 partition_count=0
 
-# ------------------------------------------------
-# 1️⃣ Rename .md5
-# ------------------------------------------------
-while read -r f; do
-    mv -- "$f" "${f%.md5}"
-    echo "→ Renamed: $(basename "$f")"
-done < <(find "$FIRM_DIR" -type f -name "*.md5")
+cd "$FIRM_DIR"
 
 # ------------------------------------------------
-# 2️⃣ Extract ZIP (once)
+# 1️⃣ Extract ZIP (only once)
 # ------------------------------------------------
-while read -r f; do
-    echo "→ Extracting ZIP: $(basename "$f")"
-    7z x -y -bd -o"$(dirname "$f")" "$f" >/dev/null
-    rm -f "$f"
-    archive_count=$((archive_count+1))
-done < <(find "$FIRM_DIR" -type f -name "*.zip")
+if compgen -G "*.zip" > /dev/null; then
+    for zip in *.zip; do
+        echo "→ Extracting ZIP: $zip"
+        7z x -y "$zip" >/dev/null
+        rm -f "$zip"
+        archive_count=$((archive_count+1))
+    done
+fi
 
 # ------------------------------------------------
-# 3️⃣ Extract TAR (once)
+# 2️⃣ Rename md5 → tar
 # ------------------------------------------------
-while read -r f; do
-    echo "→ Extracting TAR: $(basename "$f")"
-    tar -xf "$f" -C "$(dirname "$f")"
-    rm -f "$f"
-    archive_count=$((archive_count+1))
-done < <(find "$FIRM_DIR" -type f -name "*.tar")
+for f in *.md5; do
+    [ -f "$f" ] || continue
+    mv "$f" "${f%.md5}"
+    echo "→ Renamed: $f"
+done
+
+# ------------------------------------------------
+# 3️⃣ Extract all TAR
+# ------------------------------------------------
+if compgen -G "*.tar" > /dev/null; then
+    for tarfile in *.tar; do
+        echo "→ Extracting TAR: $tarfile"
+        tar -xf "$tarfile"
+        rm -f "$tarfile"
+        archive_count=$((archive_count+1))
+    done
+fi
 
 # ------------------------------------------------
 # 4️⃣ Decompress super.img.lz4
 # ------------------------------------------------
-while read -r f; do
-    echo "→ Decompressing LZ4: $(basename "$f")"
-    lz4 -d "$f" "${f%.lz4}" >/dev/null
-    rm -f "$f"
-    archive_count=$((archive_count+1))
-done < <(find "$FIRM_DIR" -type f -name "super.img.lz4")
+if [ -f "super.img.lz4" ]; then
+    echo "→ Decompressing super.img.lz4"
+    lz4 -d super.img.lz4 super.img >/dev/null
+    rm -f super.img.lz4
+fi
 
 # ------------------------------------------------
-# 5️⃣ Extract super.img
+# 5️⃣ Process super.img
 # ------------------------------------------------
-while read -r f; do
-    dir="$(dirname "$f")"
-    echo ""
-    echo "→ Processing super.img in: $dir"
-
-    simg2img "$f" "$dir/super_raw.img"
-    lpunpack -o "$dir" "$dir/super_raw.img"
-    rm -f "$dir/super_raw.img"
-
-    super_count=$((super_count+1))
-done < <(find "$FIRM_DIR" -type f -name "super.img")
+if [ -f "super.img" ]; then
+    echo "→ Processing super.img"
+    simg2img super.img super_raw.img
+    lpunpack super_raw.img
+    rm -f super_raw.img
+    super_count=1
+fi
 
 # ------------------------------------------------
-# 6️⃣ Extract logical partitions
+# 6️⃣ Extract partitions
 # ------------------------------------------------
-while read -r imgfile; do
-    name="$(basename "$imgfile")"
+for img in system*.img vendor*.img product*.img odm*.img; do
+    [ -f "$img" ] || continue
 
-    # Skip non-system partitions
-    if [[ "$name" == super* ]] || \
-       [[ "$name" == boot* ]] || \
-       [[ "$name" == vbmeta* ]] || \
-       [[ "$name" == dtbo* ]]; then
-        continue
-    fi
+    echo "→ Extracting partition: $img"
 
-    echo ""
-    echo "→ Extracting partition: $name"
-
-    if file -b "$imgfile" | grep -qi "ext4"; then
-        echo "  Detected ext4"
-        python3 "$(pwd)/bin/py_scripts/imgextractor.py" \
-            "$imgfile" "$(dirname "$imgfile")"
+    if file -b "$img" | grep -qi ext4; then
+        python3 "$(pwd)/../../bin/py_scripts/imgextractor.py" \
+            "$img" "$(pwd)"
         partition_count=$((partition_count+1))
 
-    elif file -b "$imgfile" | grep -qi "erofs"; then
-        echo "  Detected EROFS"
-        "$(pwd)/bin/erofs-utils/extract.erofs" \
-            -i "$imgfile" -x -f -o "$(dirname "$imgfile")"
+    elif file -b "$img" | grep -qi erofs; then
+        "$(pwd)/../../bin/erofs-utils/extract.erofs" \
+            -i "$img" -x -f -o "$(pwd)"
         partition_count=$((partition_count+1))
-
-    else
-        echo "  ⚠ Unknown filesystem — skipped"
     fi
-
-done < <(find "$FIRM_DIR" -type f -name "*.img")
+done
 
 # ------------------------------------------------
 # Summary
@@ -119,7 +96,7 @@ done < <(find "$FIRM_DIR" -type f -name "*.img")
 echo ""
 echo "============================================"
 echo "📊 EXTRACTION SUMMARY"
-echo "📂 Directory: $FIRM_DIR"
+echo "📂 Directory: $(pwd)"
 echo "📦 Archives processed: $archive_count"
 echo "🧩 super.img processed: $super_count"
 echo "📁 Partitions extracted: $partition_count"
