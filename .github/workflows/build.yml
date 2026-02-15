@@ -72,9 +72,12 @@ jobs:
           chmod +x scripts/extract_fw.sh
           bash scripts/extract_fw.sh "FIRMWARE/${TARGET_DEVICE}"
 
-      - name: 🏗️ Pack ROM
+      - name: 🔧 Port & Patch ROM
         run: |
           chmod +x scripts/H3CKED.sh
+          bash scripts/H3CKED.sh \
+            "FIRMWARE/${TARGET_DEVICE}" \
+            "H3CKED/Devices/${STOCK_DEVICE}"
 
       - name: 🏗️ Pack ROM
         run: |
