@@ -70,6 +70,43 @@ echo "--------------------------------------------"
 chmod +x "$DEVICE_SCRIPT"
 bash "$DEVICE_SCRIPT" "$EXTRACTED"
 
+# -----------------------------
+# Apply H3CKED Overlay
+# -----------------------------
+H3CKED_OVERLAY="H3CKED/Mods"
+
+if [ -d "$H3CKED_OVERLAY" ]; then
+    echo "📦 Applying H3CKED Overlay..."
+    echo ""
+
+    for MOD in "$H3CKED_OVERLAY"/*; do
+        if [ -d "$MOD" ]; then
+            MOD_NAME=$(basename "$MOD")
+
+            echo "--------------------------------------------"
+            echo "🧩 Applying Mod: $MOD_NAME"
+            echo "   Source: $MOD"
+            echo "   Target: $EXTRACTED"
+            echo ""
+
+            # Log files being copied
+            rsync -av \
+                "$MOD"/ "$EXTRACTED"/
+
+            echo ""
+            echo "✅ Finished: $MOD_NAME"
+            echo "--------------------------------------------"
+            echo ""
+        fi
+    done
+
+    echo "🎉 All H3CKED mods applied successfully"
+else
+    echo "ℹ️ No H3CKED overlay found, skipping..."
+fi
+
+echo "--------------------------------------------"
+
 echo "--------------------------------------------"
 echo "✅ H3CKED Port Finished Successfully"
 echo "============================================"
