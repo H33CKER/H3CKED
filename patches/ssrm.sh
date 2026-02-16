@@ -1,6 +1,4 @@
-export EXTRACTED
-export DEVICE_DIR
-
+#!/bin/bash
 CONFIG_FILE="$DEVICE_DIR/config"
 
 if [ ! -f "$CONFIG_FILE" ]; then

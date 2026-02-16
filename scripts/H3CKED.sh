@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-EXTRACTED="$1"
 STOCK_DEVICE="$2"
-DEVICE_DIR="H3CKED/Devices/$STOCK_DEVICE"
+export EXTRACTED="$1"
+export DEVICE_DIR="H3CKED/Devices/$STOCK_DEVICE"
+export APKTOOL="$(pwd)/bin/apktool/apktool.jar"
 
 # -----------------------------
 # Argument Validation
