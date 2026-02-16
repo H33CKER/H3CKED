@@ -45,11 +45,17 @@ STOCK_OVERLAY="$DEVICE_DIR/Stock"
 # -----------------------------
 STOCK_OVERLAY="$DEVICE_DIR/Stock"
 
+# -----------------------------
+# Apply Stock Overlay
+# -----------------------------
+STOCK_OVERLAY="$DEVICE_DIR/Stock"
+
 if [ -d "$STOCK_OVERLAY" ]; then
     echo "📦 Applying Stock Overlay..."
+    echo "   Source: $STOCK_OVERLAY"
+    echo "   Target: $EXTRACTED"
 
-    # Silent merge (no file logging)
-    rsync -a "$STOCK_OVERLAY"/ "$EXTRACTED"/ > /dev/null 2>&1
+    rsync -a --progress "$STOCK_OVERLAY"/ "$EXTRACTED"/
 
     echo "✅ Stock overlay applied"
 else
@@ -57,6 +63,7 @@ else
 fi
 echo "--------------------------------------------"
 echo " "
+
 # -----------------------------
 # Run Device Script
 # -----------------------------
@@ -119,7 +126,7 @@ java -jar "$APKTOOL" install-framework \
 
 # 4️⃣ Run SSRM patch
 echo "🚀 Running SSRM patch..."
-bash "$SCRIPT_DIR/../patches/ssrm.sh"
+bash "patches/ssrm.sh"
 
 echo "--------------------------------------------"
 echo "✅ H3CKED Port Finished Successfully"
