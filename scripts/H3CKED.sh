@@ -2,7 +2,8 @@
 set -euo pipefail
 
 EXTRACTED="$1"
-DEVICE_DIR="$2"
+STOCK_DEVICE="$2"
+DEVICE_DIR="H3CKED/Devices/$STOCK_DEVICE"
 
 # -----------------------------
 # Argument Validation
@@ -38,20 +39,23 @@ echo "============================================"
 # -----------------------------
 STOCK_OVERLAY="$DEVICE_DIR/Stock"
 
+# -----------------------------
+# Apply Stock Overlay (Silent)
+# -----------------------------
+STOCK_OVERLAY="$DEVICE_DIR/Stock"
+
 if [ -d "$STOCK_OVERLAY" ]; then
     echo "📦 Applying Stock Overlay..."
-    echo "   Source: $STOCK_OVERLAY"
-    echo "   Target: $EXTRACTED"
 
-    rsync -a --progress "$STOCK_OVERLAY"/ "$EXTRACTED"/
+    # Silent merge (no file logging)
+    rsync -a "$STOCK_OVERLAY"/ "$EXTRACTED"/ > /dev/null 2>&1
 
     echo "✅ Stock overlay applied"
 else
     echo "ℹ️ No Stock overlay found, skipping..."
 fi
-
 echo "--------------------------------------------"
-
+echo " "
 # -----------------------------
 # Run Device Script
 # -----------------------------
@@ -63,13 +67,12 @@ if [ ! -f "$DEVICE_SCRIPT" ]; then
     echo "   Expected: $DEVICE_SCRIPT"
     exit 1
 fi
-
 echo "▶ Running device script: $DEVICE_SCRIPT"
 echo "--------------------------------------------"
-
 chmod +x "$DEVICE_SCRIPT"
 bash "$DEVICE_SCRIPT" "$EXTRACTED"
-
+echo "Device script executed successfully"
+echo " "
 # -----------------------------
 # Apply H3CKED Overlay
 # -----------------------------
@@ -78,7 +81,6 @@ H3CKED_OVERLAY="H3CKED/Mods"
 if [ -d "$H3CKED_OVERLAY" ]; then
     echo "📦 Applying H3CKED Overlay..."
     echo ""
-
     for MOD in "$H3CKED_OVERLAY"/*; do
         if [ -d "$MOD" ]; then
             MOD_NAME=$(basename "$MOD")
@@ -104,8 +106,19 @@ if [ -d "$H3CKED_OVERLAY" ]; then
 else
     echo "ℹ️ No H3CKED overlay found, skipping..."
 fi
+echo " "
 
-echo "--------------------------------------------"
+
+# Install Framework
+echo ""
+echo "Installing Framework..."
+
+java -jar "$APKTOOL" install-framework \
+"$EXTRACTED/system/system/framework/framework-res.apk"
+
+# 4️⃣ Run SSRM patch
+echo "🚀 Running SSRM patch..."
+bash "$SCRIPT_DIR/../patches/ssrm.sh"
 
 echo "--------------------------------------------"
 echo "✅ H3CKED Port Finished Successfully"

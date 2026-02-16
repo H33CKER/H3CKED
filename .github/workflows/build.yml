@@ -77,7 +77,7 @@ jobs:
           chmod +x scripts/H3CKED.sh
           bash scripts/H3CKED.sh \
             "FIRMWARE/${TARGET_DEVICE}" \
-            "H3CKED/Devices/${STOCK_DEVICE}"
+            "${STOCK_DEVICE}"
 
       - name: 🏗️ Pack ROM
         run: |
