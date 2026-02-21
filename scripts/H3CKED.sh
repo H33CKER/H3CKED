@@ -124,10 +124,6 @@ echo "Installing Framework..."
 java -jar "$APKTOOL" install-framework \
 "$EXTRACTED/system/system/framework/framework-res.apk"
 
-# 4️⃣ Run SSRM patch
-echo "🚀 Running SSRM patch..."
-bash "patches/ssrm.sh"
-
 echo "--------------------------------------------"
 echo "✅ H3CKED Port Finished Successfully"
 echo "============================================"
