@@ -11,17 +11,17 @@ on:
       TARGET_DEVICE:
         description: "Target device model"
         required: true
-        default: "SM-A346B"
+        default: "SM-A245F"
 
       TARGET_DEVICE_CSC:
         description: "Target device CSC"
         required: true
-        default: "BTB"
+        default: "EGY"
 
       TARGET_DEVICE_IMEI:
         description: "Target device IMEI"
         required: true
-        default: "353117555323497"
+        default: "350853090335744"
 
       OUTPUT_FILESYSTEM:
         description: "Filesystem type (erofs / ext4)"
